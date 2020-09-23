@@ -19,6 +19,8 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module EX(
+	 input clk,
+	 input reset,
     input [31:0] Instr_E_in,
     input [31:0] RS_E_in,
     input [31:0] RT_E_in,
@@ -26,11 +28,13 @@ module EX(
     input [31:0] PC8_E_in,
     input [4:0] A3_E_in,
     input [31:0] Ext_E_in,
-    input [31:0] ALUout_M,
-    input [31:0] PC8_M_in,
+    input [31:0] ALUout_M,  //实际上是dataout_M
     input [31:0] WD_W,
     input [2:0] ForwardRSE,
     input [2:0] ForwardRTE,
+	 
+	 output start,
+	 output busy,
     output [31:0] Instr_E_out,
     output [31:0] ALUout_E,
     output [31:0] RT_E_out,
@@ -45,19 +49,25 @@ module EX(
 	assign PC8_E_out = PC8_E_in;
 
 	//Forward
-	wire [31:0] RS_E, ALU_B;
-	MUX_4_32bits MFRSE (.MUXop(ForwardRSE), .in0(RS_E_in), .in1(ALUout_M), .in2(PC8_M_in), .in3(WD_W), .out(RS_E));
-	MUX_4_32bits MFRTE (.MUXop(ForwardRTE), .in0(RT_E_in), .in1(ALUout_M), .in2(PC8_M_in), .in3(WD_W), .out(RT_E_out));
+	wire [31:0] RS_E, ALU_B;	//RS不用继续往后送了
+	MUX_4_32bits MFRSE (.MUXop(ForwardRSE), .in0(RS_E_in), .in1(ALUout_M), .in2(WD_W), .out(RS_E));
+	MUX_4_32bits MFRTE (.MUXop(ForwardRTE), .in0(RT_E_in), .in1(ALUout_M), .in2(WD_W), .out(RT_E_out));
 	
 	//ALUSrc
 	wire [2:0] ALUSrc;
 	MUX_4_32bits mux_alusrc (.MUXop(ALUSrc), .in0(RT_E_out), .in1(Ext_E_in), .out(ALU_B));
 	
 	//control
-	wire [1:0] ALUop; 
-	ctrl controller_EX (.Instr(Instr_E_in), .ALUSrc(ALUSrc), .ALUop(ALUop));
+	wire [2:0] EXout_sel;
+	wire [3:0] ALUop; 
+	ctrl controller_EX (.Instr(Instr_E_in), .ALUSrc(ALUSrc), .ALUop(ALUop), .EXout_sel(EXout_sel));
 	
 	//ALU
-	ALU alu (.A(RS_E), .B(ALU_B), .ALUop(ALUop), .result(ALUout_E));
+	wire [31:0] ALUout, HI, LO;
+	ALU alu (.A(RS_E), .B(ALU_B), .instr(Instr_E_in), .ALUop(ALUop), .result(ALUout));
+	XALU xalu (.clk(clk), .A(RS_E), .B(ALU_B), .instr(Instr_E_in), .reset(reset), .start(start), .busy(busy),
+					.HI(HI), .LO(LO));
 	
+	//EXout_sel
+	MUX_4_32bits mux_exout (.MUXop(EXout_sel), .in0(ALUout), .in1(PC8_E_in), .in2(HI), .in3(LO), .out(ALUout_E));
 endmodule

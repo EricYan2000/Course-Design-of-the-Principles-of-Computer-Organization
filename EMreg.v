@@ -49,12 +49,12 @@ module EMreg(
 	begin
 		if (reset)
 		begin
-			Instr_M_in = 0;
-			ALUout_M = 0;
-			RT_M_in = 0;
-			A3_M_in = 0;
-			PC4_M_in = 0;
-			PC8_M_in = 0;
+			Instr_M_in <= 0;
+			ALUout_M <= 0;
+			RT_M_in <= 0;
+			A3_M_in <= 0;
+			PC4_M_in <= 0;
+			PC8_M_in <= 0;
 		end
 		else 
 		begin

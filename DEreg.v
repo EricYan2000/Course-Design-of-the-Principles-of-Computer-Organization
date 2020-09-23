@@ -61,13 +61,13 @@ module DEreg(
 		  end
 		  else 
 		  begin
-			  Instr_out <= Instr_in;
-			  PC4_out <= PC4_in;
-			  PC8_out <= PC8_in;
-			  RS_out <= RS_in;
-			  RT_out <= RT_in;
-			  Ext_out <= Ext_in;
-			  A3_out <= A3_in;
+			  Instr_out = Instr_in;
+			  PC4_out = PC4_in;
+			  PC8_out = PC8_in;
+			  RS_out = RS_in;
+			  RT_out = RT_in;
+			  Ext_out = Ext_in;
+			  A3_out = A3_in;
 	     end
 	  end
 endmodule

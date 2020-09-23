@@ -28,10 +28,10 @@ module MUX_4_5bits(
     );
 	
 	assign out = (MUXop == 3'b000) ? in0 :
-					 (MUXop == 3'b001) ? in1 :
-					 (MUXop == 3'b010) ? in2 :
+					 (MUXop == 3'b001) ? in1 : 
+					 (MUXop == 3'b010) ? in2 : 
 					 (MUXop == 3'b011) ? in3 :
-					 5'bzzzzz;		//when extending, remember to add inputs to the ports of this module
+					 5'bz;
 endmodule
 
 module MUX_4_32bits(
@@ -44,10 +44,10 @@ module MUX_4_32bits(
     );
 	
 	assign out = (MUXop == 3'b000) ? in0 :
-					 (MUXop == 3'b001) ? in1 :
-					 (MUXop == 3'b010) ? in2 :
+					 (MUXop == 3'b001) ? in1 : 
+					 (MUXop == 3'b010) ? in2 : 
 					 (MUXop == 3'b011) ? in3 :
-					 32'bz;		//when extending, remember to add inputs to the ports of this module
+					 32'bz;
 endmodule
 
 module MUX_2_32bits(
@@ -58,6 +58,6 @@ module MUX_2_32bits(
     );
 	
 	assign out = (MUXop == 1'b0) ? in0 :
-					 (MUXop == 1'b1) ? in1 :
-					 32'bz;		//when extending, remember to add inputs to the ports of this module
+					 (MUXop == 1'b1) ? in1 : 
+					 5'bz;
 endmodule

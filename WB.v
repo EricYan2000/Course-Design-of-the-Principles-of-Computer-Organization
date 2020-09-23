@@ -21,7 +21,7 @@
 module WB(
     input [31:0] Instr_W_in,
     input [31:0] ALUout_W_in,
-    input [31:0] DM_W_in,
+    //input [31:0] DM_W_in,
     input [31:0] PC4_W_in,
     input [31:0] PC8_W_in,
     input [4:0] A3_W_in,
@@ -33,10 +33,9 @@ module WB(
 
 	assign PC4_W_out = PC4_W_in;
 	assign A3_W = A3_W_in;
+	assign WD_W = ALUout_W_in;
 
 	wire [2:0] MemToReg;
-	ctrl controller_WB (.Instr(Instr_W_in), .RegWrite(RegWrite_W), .MemToReg(MemToReg));
+	ctrl controller_WB (.Instr(Instr_W_in), .RegWrite(RegWrite_W));
 	
-	MUX_4_32bits mux_memtoreg (.MUXop(MemToReg), .in0(ALUout_W_in), .in1(DM_W_in), .in2(PC8_W_in), .out(WD_W));
-
 endmodule

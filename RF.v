@@ -27,6 +27,7 @@ module RF(
     input [4:0] A2,
     input [4:0] A3,
     input [31:0] WD,
+	 input [31:0] Instr_W,
     output [31:0] RD1,
     output [31:0] RD2
     );
@@ -53,7 +54,10 @@ module RF(
 			if ((A3!=5'b00000)&&RegWrite)
 			begin
 				register[A3] <= WD;
-				$display("%d@%h: $%d <= %h",$time,PC_W,A3,WD);
+				//if (PC_W == 32'h3008)
+					//$display("%d@%h: $%d <= %h",$time,Instr_W,A3,WD);
+				//else
+					$display("%d@%h: $%d <= %h",$time,PC_W,A3,WD);
 			end
 	end
 endmodule

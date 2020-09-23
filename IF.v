@@ -24,16 +24,16 @@ module IF(
     input PCSrc,
     input [31:0] NPC,
     input stall,
-    output [31:0] Instr,
-    output [31:0] PC4,
-    output [31:0] PC8
+    output [31:0] Instr_F_out,  	//Instr,
+    output [31:0] PC4_F_out,		//PC4
+    output [31:0] PC8_F_out		//PC8
     );
 
 	wire [31:0] PC, NPC_to_pc;
-	assign PC4 = PC + 4;
-	assign PC8 = PC + 8;
+	assign PC4_F_out = PC + 4;
+	assign PC8_F_out = PC + 8;
 	
-	MUX_2_32bits choose_npc (.MUXop(PCSrc), .in0(PC4), .in1(NPC), .out(NPC_to_pc));
+	MUX_2_32bits choose_npc (.MUXop(PCSrc), .in0(PC4_F_out), .in1(NPC), .out(NPC_to_pc));
 	PC pc (.clk(clk), .reset(reset), .en(stall), .NPC(NPC_to_pc), .PC(PC));
-	IM im (.PC(PC), .RD(Instr));
+	IM im (.PC(PC), .RD(Instr_F_out));
 endmodule

@@ -27,10 +27,10 @@ module ID(
     input [4:0] A3_W,
     input [31:0] WD_W,
     input [31:0] PC4_W,
+	 input [31:0] Instr_W,
     input RegWrite_W,
     input [31:0] PC8_E_in,
     input [31:0] ALUout_M,
-    input [31:0] PC8_M_in,
     input [2:0] ForwardRSD,
     input [2:0] ForwardRTD,
     output PCSrc,
@@ -41,7 +41,8 @@ module ID(
     output [31:0] RS_D_out,
     output [31:0] RT_D_out,
     output [4:0] A3_D,
-    output [31:0] Ext_D
+    output [31:0] Ext_D,
+	 output M_in_D
     );
 
 	assign Instr_D_out = Instr_D_in;
@@ -58,27 +59,31 @@ module ID(
 	//control
 	wire [2:0] NPCop, RegDst;
 	wire [1:0] Extop;
-	wire Branch, Jump;
-	ctrl controller_ID (.Instr(Instr_D_in), .NPCop(NPCop), .RegDst(RegDst), .Extop(Extop), .Branch(Branch), .Jump(Jump));
+	wire Branch, Jump, RegWrite;
+	ctrl controller_ID (.Instr(Instr_D_in), .NPCop(NPCop), .RegDst(RegDst), .Extop(Extop), .Jump(Jump),
+								.RegWrite(RegWrite), .M_in_D(M_in_D));
 	
 	//GRF
-	wire [31:0] RD1, RD2;
-	RF GRF (.clk(clk), .reset(reset), .RegWrite(RegWrite_W), .PC4_W(PC4_W), .A1(rs), .A2(rt), .A3(A3_W), .WD(WD_W), .RD1(RD1), .RD2(RD2));
+	wire [31:0] RD1, RD2, Instr_W;
+	RF GRF (.clk(clk), .reset(reset), .RegWrite(RegWrite_W), .PC4_W(PC4_W), .A1(rs), .A2(rt), .A3(A3_W), 
+				.WD(WD_W), .RD1(RD1), .RD2(RD2), .Instr_W(Instr_W));
 	
 	//MUX_of_forward
-	MUX_4_32bits MFRSD (.MUXop(ForwardRSD), .in0(RD1), .in1(PC8_E_in), .in2(ALUout_M), .in3(PC8_M_in), .out(RS_D_out));
-	MUX_4_32bits MFRTD (.MUXop(ForwardRTD), .in0(RD2), .in1(PC8_E_in), .in2(ALUout_M), .in3(PC8_M_in), .out(RT_D_out));
+	MUX_4_32bits MFRSD (.MUXop(ForwardRSD), .in0(RD1), .in1(PC8_E_in), .in2(ALUout_M), .out(RS_D_out));
+	MUX_4_32bits MFRTD (.MUXop(ForwardRTD), .in0(RD2), .in1(PC8_E_in), .in2(ALUout_M), .out(RT_D_out));
 	
 	//branching&jumping signals
-	wire equal;
-	cmp CMP (.A(RS_D_out), .B(RT_D_out), .equal(equal));
-	assign PCSrc = (equal&&Branch)||Jump;
+	wire cmp_jump;
+	condition_cmp condition (.instr(Instr_D_in), .rs(RS_D_out), .rt(RT_D_out), .cmp_jump(cmp_jump));
+	assign PCSrc = cmp_jump||Jump;
 	
 	//ext
 	Extender Ext(.imm_16(imm_16), .Extop(Extop), .out(Ext_D));
 	
 	//regdst
-	MUX_4_5bits regdst (.MUXop(RegDst), .in0(rd), .in1(rt), .in2(5'b11111), .out(A3_D));
+	wire [4:0] A3_D_pre;
+	MUX_4_5bits regdst (.MUXop(RegDst), .in0(rd), .in1(rt), .in2(5'b11111), .out(A3_D_pre));
+	MUX_4_5bits A3_set_zero (.MUXop({2'b00,RegWrite}), .in0(5'b0), .in1(A3_D_pre), .out(A3_D));
 	
 	//NPC
 	NextPC NPC (.PC4(PC4_D_in), .Instr(Instr_D_in), .NPCop(NPCop), .RS_D(RS_D_out), .NextPC(NPC_D));

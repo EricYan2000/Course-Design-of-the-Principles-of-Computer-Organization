@@ -23,11 +23,14 @@ module IM(
     output [31:0] RD
     );
 
-	reg [31:0] ROM[1023:0];
+	reg [31:0] ROM[4095:0];
+	wire [31:0] address;
+	assign address = PC - 32'h3000;
+	
 	initial
 	begin
 		$readmemh("code.txt",ROM);
 	end
 	
-	assign RD = ROM[PC[11:2]];
+	assign RD = ROM[address[13:2]];
 endmodule

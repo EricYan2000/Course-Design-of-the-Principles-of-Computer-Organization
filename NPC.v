@@ -37,7 +37,7 @@ module NextPC(
 	assign NextPC = ( NPCop == 3'b000 ) 						 ? (PC + 3'd4) :  //no jump
 						 ( NPCop == 3'b001 )   ?   (PC + 3'd4 + {{14{imm_16[15]}}, imm_16, 2'b00}) : //beq_jump
 						 ( NPCop == 3'b010 )						 ? {PC[31:28], imm_26, 2'b00} : //jal
-						 ( NPCop == 3'b011 ) 						 ?  RS_D  :   //jr
+						 ( NPCop == 3'b011 ) 						 ?  RS_D  :   //jr and jalr
 						 ( NPCop == 3'b100 )   ?    {{PC[31:28]}, imm_26, {2'b00}}   :    //j
 						 32'bz;
 endmodule

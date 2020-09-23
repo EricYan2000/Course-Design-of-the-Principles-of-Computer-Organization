@@ -22,17 +22,17 @@ module FDreg(
 	 input clk,
     input reset,
     input stall,
-    input [31:0] Instr_in,
+    input [31:0] Instr_from_F,
     input [31:0] PC4_in,
     input [31:0] PC8_in,
-    output reg [31:0] Instr_out,
+    output reg [31:0] Instr_to_D,
     output reg [31:0] PC4_out,
     output reg [31:0] PC8_out
     );
 	 
 	initial
 	begin
-		Instr_out = 32'h0000_0000;
+		Instr_to_D = 32'h0000_0000;
 		PC4_out = 32'h0000_0000;
 		PC8_out = 32'h0000_0000;
 	end
@@ -43,13 +43,13 @@ module FDreg(
 		begin
 			if (reset)
 			begin
-				Instr_out <= 32'h0000_0000;
+				Instr_to_D <= 32'h0000_0000;
 				PC4_out <= 32'h0000_0000;
 				PC8_out <= 32'h0000_0000;
 			end
 			else
 			begin
-				Instr_out <= Instr_in;
+				Instr_to_D <= Instr_from_F;
 				PC4_out <= PC4_in;
 				PC8_out <= PC8_in;
 			end

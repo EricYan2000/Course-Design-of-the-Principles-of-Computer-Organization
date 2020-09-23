@@ -45,29 +45,35 @@ module mips(
 	//wires arounf WB   A3_W,  WD_W,   RegWrite_W
 	wire [4:0] A3_W_in;
 	wire [31:0] Instr_W_in, ALUout_W_in, DM_W_in, PC4_W_in, PC8_W_in;
+	wire start, start_D_out, busy, M_in_D, stall_regular, stall_m;
 	
-	IF IF_module (.clk(clk), .reset(reset), .PCSrc(PCSrc_D), .NPC(NPC_D), .stall(stall), .Instr(Instr_F_out), 
-						.PC4(PC4_F_out), .PC8(PC8_F_out));
+	
+	assign stall_m = ((start||busy) && M_in_D);
+	assign stall = stall_m || stall_regular;
+	
+	IF IF_module (.clk(clk), .reset(reset), .PCSrc(PCSrc_D), .NPC(NPC_D), .stall(stall), .Instr_F_out(Instr_F_out), 
+						.PC4_F_out(PC4_F_out), .PC8_F_out(PC8_F_out));
 						
-	FDreg FDREG (.clk(clk), .reset(reset), .stall(stall), .Instr_in(Instr_F_out), .PC4_in(PC4_F_out), 
-						.PC8_in(PC8_F_out), .Instr_out(Instr_D_in), .PC4_out(PC4_D_in), .PC8_out(PC8_D_in));
+	FDreg FDREG (.clk(clk), .reset(reset), .stall(stall), .Instr_from_F(Instr_F_out), .PC4_in(PC4_F_out), 
+						.PC8_in(PC8_F_out), .Instr_to_D(Instr_D_in), .PC4_out(PC4_D_in), .PC8_out(PC8_D_in));
 						
 	ID ID_module (.clk(clk), .reset(reset), .Instr_D_in(Instr_D_in), .PC4_D_in(PC4_D_in), .PC8_D_in(PC8_D_in),
-						.A3_W(A3_W), .WD_W(WD_W), .PC4_W(PC4_W),.RegWrite_W(RegWrite_W), .PC8_E_in(PC8_E_in), .ALUout_M(ALUout_M),
-						.PC8_M_in(PC8_M_in), .ForwardRSD(ForwardRSD), .ForwardRTD(ForwardRTD), .PCSrc(PCSrc_D), 
+						.A3_W(A3_W), .WD_W(WD_W), .PC4_W(PC4_W),.RegWrite_W(RegWrite_W), .PC8_E_in(PC8_E_in),
+						.ALUout_M(ALUout_M), .ForwardRSD(ForwardRSD), .ForwardRTD(ForwardRTD), .PCSrc(PCSrc_D), 
 						.NPC_D(NPC_D), .Instr_D_out(Instr_D_out), .PC4_D_out(PC4_D_out), .PC8_D_out(PC8_D_out), 
-						.RS_D_out(RS_D_out), .RT_D_out(RT_D_out), .A3_D(A3_D), .Ext_D(Ext_D));
+						.RS_D_out(RS_D_out), .RT_D_out(RT_D_out), .A3_D(A3_D), .Ext_D(Ext_D), .M_in_D(M_in_D), 
+						.Instr_W(Instr_W_in));
 						
 	DEreg DEREG (.clk(clk), .reset(reset), .stall(stall), .Instr_in(Instr_D_out), .PC4_in(PC4_D_out), 
 						.PC8_in(PC8_D_out), .RS_in(RS_D_out), .RT_in(RT_D_out), .Ext_in(Ext_D), .A3_in(A3_D),
-						.Instr_out(Instr_E_in), .PC4_out(PC4_E_in), .PC8_out(PC8_E_in), 
-						.RS_out(RS_E_in), .RT_out(RT_E_in), .Ext_out(Ext_E_in), .A3_out(A3_E_in));
+						.Instr_out(Instr_E_in), .PC4_out(PC4_E_in), .PC8_out(PC8_E_in), .RS_out(RS_E_in), .RT_out(RT_E_in), .Ext_out(Ext_E_in), 
+						.A3_out(A3_E_in));
 						
 	EX EX_module (.Instr_E_in(Instr_E_in), .RS_E_in(RS_E_in), .RT_E_in(RT_E_in), .PC4_E_in(PC4_E_in), 
 						.PC8_E_in(PC8_E_in), .A3_E_in(A3_E_in), .Ext_E_in(Ext_E_in), .ALUout_M(ALUout_M), 
-						.PC8_M_in(PC8_M_in), .WD_W(WD_W), .ForwardRSE(ForwardRSE), .ForwardRTE(ForwardRTE),
+						.WD_W(WD_W), .ForwardRSE(ForwardRSE), .ForwardRTE(ForwardRTE), .clk(clk), .reset(reset),
 						.Instr_E_out(Instr_E_out), .ALUout_E(ALUout_E), .RT_E_out(RT_E_out), .A3_E_out(A3_E_out),
-						.PC4_E_out(PC4_E_out), .PC8_E_out(PC8_E_out));
+						.PC4_E_out(PC4_E_out), .PC8_E_out(PC8_E_out), .busy(busy), .start(start));
 						
 	EMreg EMREG (.clk(clk), .reset(reset), .Instr_E_out(Instr_E_out), .ALUout_E(ALUout_E), .RT_E_out(RT_E_out),
 						.A3_E_out(A3_E_out), .PC4_E_out(PC4_E_out), .PC8_E_out(PC8_E_out), .Instr_M_in(Instr_M_in), .ALUout_M(ALUout_M), 
@@ -75,21 +81,25 @@ module mips(
 						
 	MEM MEM_module (.clk(clk), .reset(reset), .Instr_M_in(Instr_M_in), .ALUout_M(ALUout_M), .RT_M_in(RT_M_in),
 						.A3_M_in(A3_M_in), .PC4_M_in(PC4_M_in), .PC8_M_in(PC8_M_in), .WD_W(WD_W), .ForwardRTM(ForwardRTM),
-						.Instr_M_out(Instr_M_out), .DM_M_out(DM_M_out), .ALUout_M_out(ALUout_M_out), .A3_M_out(A3_M_out),
+						.Instr_M_out(Instr_M_out), .ALUout_M_out(ALUout_M_out), .A3_M_out(A3_M_out),
 						.PC4_M_out(PC4_M_out), .PC8_M_out(PC8_M_out));
+						// .DM_M_out(DM_M_out),
 						
-	MWreg MWREG (.clk(clk), .reset(reset), .Instr_M_out(Instr_M_out), .ALUout_M_out(ALUout_M_out), .DM_M_out(DM_M_out),
+	MWreg MWREG (.clk(clk), .reset(reset), .Instr_M_out(Instr_M_out), .ALUout_M_out(ALUout_M_out),
 						.PC4_M_out(PC4_M_out), .PC8_M_out(PC8_M_out), .A3_M_out(A3_M_out),
-						.Instr_W_in(Instr_W_in), .ALUout_W_in(ALUout_W_in), .DM_W_in(DM_W_in), .PC4_W_in(PC4_W_in),
+						.Instr_W_in(Instr_W_in), .ALUout_W_in(ALUout_W_in), .PC4_W_in(PC4_W_in),
 						.PC8_W_in(PC8_W_in), .A3_W_in(A3_W_in));
+						// .DM_M_out(DM_M_out),  .DM_W_in(DM_W_in),
 						
-	WB WB_module (.Instr_W_in(Instr_W_in), .ALUout_W_in(ALUout_W_in), .DM_W_in(DM_W_in), .PC4_W_in(PC4_W_in),
+	WB WB_module (.Instr_W_in(Instr_W_in), .ALUout_W_in(ALUout_W_in), .PC4_W_in(PC4_W_in),
 						.PC8_W_in(PC8_W_in), .A3_W_in(A3_W_in), .RegWrite_W(RegWrite_W), .PC4_W_out(PC4_W),
 						.WD_W(WD_W), .A3_W(A3_W));
+						// .DM_W_in(DM_W_in),
+						
 						
 	hazard FUCKYOU (.Instr_D_in(Instr_D_in), .Instr_E_in(Instr_E_in), .Instr_M_in(Instr_M_in), .Instr_W_in(Instr_W_in),
-						.A3_E_in(A3_E_in), .A3_M_in(A3_M_in), .A3_W(A3_W), .ForwardRSD(ForwardRSD), 
+						.A3_E(A3_E_in), .A3_M(A3_M_in), .A3_W(A3_W), .ForwardRSD(ForwardRSD), 
 						.ForwardRTD(ForwardRTD), .ForwardRSE(ForwardRSE), .ForwardRTE(ForwardRTE),
-						.ForwardRTM(ForwardRTM), .stall(stall));
+						.ForwardRTM(ForwardRTM), .stall(stall_regular));
 endmodule
 
