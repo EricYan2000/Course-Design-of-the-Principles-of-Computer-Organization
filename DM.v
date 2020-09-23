@@ -48,7 +48,7 @@ module DM(
 			for(i=0;i<4096;i=i+1)
 				RAM[i]=0;
 		else 
-			if(MemWrite)
+			if(MemWrite && (A >= 32'h0000_0000) && (A <= 32'h0000_2fff))
 			begin
 				if (BE == 4'b1111)				RAM[addr] = WD;
 				else if (BE == 4'b1100)			RAM[addr][31:16] = WD[15:0]; 

@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date:    18:23:27 11/19/2019 
+// Create Date:    15:47:07 12/17/2019 
 // Design Name: 
-// Module Name:    IM 
+// Module Name:    ExcCode 
 // Project Name: 
 // Target Devices: 
 // Tool versions: 
@@ -18,20 +18,25 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module IM(
-    input [31:0] PC,
-    output [31:0] RD
+module ExcCode(
+    input clk,
+    input reset,
+	 input stall,
+    input [4:0] ExcCode_in,
+    output reg [4:0] ExcCode_out
     );
 
-	reg [31:0] ROM[4095:0];
-	wire [31:0] address;
-	assign address = PC - 32'h3000;
-	
-	initial
+	initial 
 	begin
-		$readmemh("code.txt",ROM);
-		$readmemh("code_handler.txt", ROM, 1120, 2047); 
+		ExcCode_out = 0;
 	end
-	
-	assign RD = ROM[address[13:2]];
+
+	always @(posedge clk)
+	begin
+		if (reset)
+			ExcCode_out = 0;
+		else
+			if (~stall)
+				ExcCode_out = ExcCode_in;
+	end
 endmodule

@@ -24,14 +24,13 @@ module XALU(
     input [31:0] B,
     input [31:0] instr,
 	 input reset,
-    output start,
+    input start,
+	 input DISABLE,
     output reg busy,
     output reg [31:0] HI,
     output reg [31:0] LO
     );
 
-	assign start = ((instr[31:26] == 6'b0)&&
-						 ((instr[5:0]==6'd24)||(instr[5:0]==6'd25)||(instr[5:0]==6'd26)||(instr[5:0]==6'd27)));
 	reg [31:0] hi_reg, lo_reg, state;
 	reg [5:0] func;
 	initial 
@@ -59,57 +58,41 @@ module XALU(
 		end
 		else 
 		begin
-			if (state == 0)
+			if ((state == 0) && ~DISABLE)
 			begin
-				if ((instr[31:26]==6'b000000)&&(instr[5:0] == 6'd16))	//MFHI
+				if ((instr[31:26] == 6'b000000) && (instr[5:0] == 6'd16))	//MFHI
 				begin
 					state = 0;
 					busy = 0;
 					HI = hi_reg;
 					func = 0;
 				end
-				else if ((instr[31:26]==6'b000000)&&(instr[5:0] == 6'd17))	//MTHI
-				begin
-					state = 0;
-					busy = 0;
-					hi_reg = A;
-					HI = A;
-					func = 0;
-				end
-				else if ((instr[31:26]==6'b000000)&&(instr[5:0] == 6'd18))	//MFLO
+				else if ((instr[31:26] == 6'b000000) && (instr[5:0] == 6'd18))	//MFLO
 				begin
 					state = 0;
 					busy = 0;
 					LO = lo_reg;
 					func = 0;
 				end
-				else if ((instr[31:26]==6'b000000)&&(instr[5:0] == 6'd19))	//MTLO
-				begin
-					state = 0;
-					busy = 0;
-					lo_reg = A;
-					LO = A;
-					func = 0;
-				end
 				else						
 				begin
-					if (start)			//ÓÐÐèÒª¼ÆËãµÄ³Ë³ýÖ¸Áî
+					if (start)			//ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ä³Ë³ï¿½Ö¸ï¿½ï¿
 					begin
-						if (instr[5:0] == 6'd24)			//MULT
+						if ((instr[31:26] == 6'b000000) && (instr[5:0] == 6'd24))			//MULT
 						begin
 							state = 1;
 							busy = 1;
 							{hi_reg, lo_reg} = $signed(A) * $signed(B);
 							func = instr[5:0];
 						end
-						else if (instr[5:0] == 6'd25)	//MULTU
+						else if ((instr[31:26] == 6'b000000) && (instr[5:0] == 6'd25))	//MULTU
 						begin
 							state = 1;
 							busy = 1;
 							{hi_reg, lo_reg} = A * B;
 							func = instr[5:0];
 						end
-						else if (instr[5:0] == 6'd26)	//DIV
+						else if ((instr[31:26] == 6'b000000) && (instr[5:0] == 6'd26))	//DIV
 						begin
 							state = 1;
 							busy = 1;
@@ -117,13 +100,29 @@ module XALU(
 							lo_reg = $signed(A) / $signed(B);
 							func = instr[5:0];
 						end
-						else if (instr[5:0] == 6'd27)	//DIVU
+						else if ((instr[31:26] == 6'b000000) && (instr[5:0] == 6'd27))	//DIVU
 						begin
 							state = 1;
 							busy = 1;
 							hi_reg = A % B;
 							lo_reg = A / B;
 							func = instr[5:0];
+						end
+						else if ((instr[31:26] == 6'b000000) && (instr[5:0] == 6'd17))	//MTHI
+						begin
+							state = 0;
+							busy = 0;
+							hi_reg = A;
+							HI = A;
+							func = 0;
+						end
+						else if ((instr[31:26] == 6'b000000) && (instr[5:0] == 6'd19))	//MTLO
+						begin
+							state = 0;
+							busy = 0;
+							lo_reg = A;
+							LO = A;
+							func = 0;
 						end
 						else
 						begin
@@ -142,19 +141,29 @@ module XALU(
 			end
 			else if ((state==32'd1)||(state==32'd2)||(state==32'd3)||(state==32'd4))
 			begin
-				state = state + 32'b1;
-				busy = 1;
+				if ((state==32'd1) && DISABLE)
+				begin
+					hi_reg = HI;
+					lo_reg = LO;
+					state = 0;
+					busy = 0;
+				end
+				else
+				begin
+					state = state + 32'b1;
+					busy = 1;
+				end
 			end
 			else if (state == 5)
 			begin
-				if ((func == 32'd24)||(func == 32'd25))		//MULTºÍMULTU½áÊø¼ÆËã£¬Êä³ö½á¹û£¬·µ»Ø³õÌ¬£¬busyÏ¨Ãð
+				if ((func == 32'd24)||(func == 32'd25))		//MULTï¿½ï¿½MULTUï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ã£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø³ï¿½Ì¬ï¿½ï¿½busyÏ¨ï¿½ï¿½
 				begin
 					state = 0;
 					busy = 0;
 					HI = hi_reg;
 					LO = lo_reg;
 				end
-				else if ((func == 32'd26)||(func == 32'd27))	//DIVºÍDIVU¼ÌÐø½øÐÐÔËËã
+				else if ((func == 32'd26)||(func == 32'd27))	//DIVï¿½ï¿½DIVUï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				begin
 					state = state + 32'b1;
 					busy = 1;
@@ -170,7 +179,7 @@ module XALU(
 				state = state + 1;
 				busy = 1;
 			end
-			else if (state == 10)			//DIVºÍDIVU½áÊøÔËËã£¬Êä³ö½á¹û
+			else if (state == 10)			//DIVï¿½ï¿½DIVUï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ã£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			begin
 				HI = hi_reg;
 				LO = lo_reg;

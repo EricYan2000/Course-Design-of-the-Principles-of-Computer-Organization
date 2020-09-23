@@ -39,15 +39,15 @@ module FDreg(
 	
 	always @(posedge clk)
 	begin
-		if (~stall)
+		if (reset)
 		begin
-			if (reset)
-			begin
-				Instr_to_D <= 32'h0000_0000;
-				PC4_out <= 32'h0000_0000;
-				PC8_out <= 32'h0000_0000;
-			end
-			else
+			Instr_to_D <= 32'h0000_0000;
+			PC4_out <= 32'h0000_0000;
+			PC8_out <= 32'h0000_0000;
+		end
+		else
+		begin
+			if (~stall)
 			begin
 				Instr_to_D <= Instr_from_F;
 				PC4_out <= PC4_in;

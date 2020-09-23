@@ -36,7 +36,13 @@ module ctrl(
 	 output [2:0] tuse_rt,
 	 output [4:0] rsnum,
 	 output [4:0] rtnum,
-	 output M_in_D
+	 output M_in_D,
+	 output unknown,
+	 output start,
+	 output need_stall,
+	 output cp0write,
+	 output eret,
+	 output mtc0
     );
 	
 	wire [5:0] opcode, Func;
@@ -49,12 +55,13 @@ module ctrl(
 
 	wire J, JAL, JR, JALR,
 		  BEQ, BNE, BLEZ, BGTZ, BLTZ, BGEZ,
-		  LB, LH, LW, LBU,
+		  LB, LH, LW, LBU, LHU,
 		  SB, SH, SW,
 		  ADDI, ADDIU, SLTI, SLTIU, ANDI, ORI, XORI, LUI, 
 		  ADD, ADDU, SUB, SUBU, AND, OR, XOR, NOR,
 		  SLL, SRL, SRA, SLLV, SRLV, SRAV, SLT, SLTU,
-		  MFHI, MTHI, MFLO, MTLO, MULT, MULTU, DIV, DIVU;
+		  MFHI, MTHI, MFLO, MTLO, MULT, MULTU, DIV, DIVU,
+		  ERET, MTC0, MFC0;
 	
 	assign J = (opcode == 6'd2);
 	assign JAL = (opcode == 6'd3);
@@ -106,18 +113,22 @@ module ctrl(
 	assign SB = (opcode == 6'd40);
 	assign SH = (opcode == 6'd41);
 	assign SW = (opcode == 6'd43);
+	assign ERET = ((opcode == 6'b010000)&&(Func == 6'b011000));
+	assign MTC0 = ((opcode == 6'b010000)&&(rs == 5'b00100));
+	assign MFC0 = ((opcode == 6'b 010000)&&(rs == 5'b00000));
 	
 	//controlling signals      
+	
 	assign RegDst = (ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||
 						  JR||SW||SH||SB||BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||J||JALR||
-						  MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO) ? 3'b000 :
-						 (ORI||ADDI||ADDIU||ANDI||SLTI||SLTIU||XORI||LUI||LW||LB||LBU||LH||LHU) ? 3'b001 :
+						  MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO||ERET||MTC0) ? 3'b000 :
+						 (ORI||ADDI||ADDIU||ANDI||SLTI||SLTIU||XORI||LUI||LW||LB||LBU||LH||LHU||MFC0) ? 3'b001 :
 						 (JAL) ? 3'b010 :
 						 3'b000;
 	
 	assign NPCop = (ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||
 						 ORI||ADDI||SLTI||SLTIU||ADDIU||ANDI||XORI||LW||LB||LBU||LH||LHU||SW||SH||SB||LUI||
-						 MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO) ? 3'b000 :
+						 MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO||ERET||MTC0||MFC0) ? 3'b000 :
 						(BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ) ? 3'b001 :  
 						(JAL) ? 3'b010 :
 						(JR||JALR) ? 3'b011 :
@@ -127,37 +138,41 @@ module ctrl(
 	assign MemToReg = (ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||
 							 JR||ORI||ADDI||ADDIU||ANDI||SLTI||SLTIU||XORI||SW||SH||SB||
 							 MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO||
-							 BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||LUI||JAL||J||JALR) ? 3'b000 :
+							 BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||LUI||JAL||J||JALR||ERET||MTC0) ? 3'b000 :
 							(LW||LB||LBU||LH||LHU) ? 3'b001 : 
+							(MFC0) ? 3'b011 :
 							3'b000;
 							
 	assign RegWrite = (ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||
 							 ORI||ADDI||ADDIU||ANDI||SLTI||SLTIU||XORI||LW||LB||LBU||LH||LHU||LUI||JAL||JALR||
-							 MFHI||MFLO) ? 1'b1 :
-							(JR||SW||SH||SB||BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||J||MULT||MULTU||DIV||DIVU||MTHI||MTLO) ? 1'b0 : 
+							 MFHI||MFLO||MFC0) ? 1'b1 :
+							(JR||SW||SH||SB||BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||J||MULT||MULTU||DIV||DIVU||MTHI||MTLO||
+							ERET||MTC0) ? 1'b0 : 
 							1'b0;
 							
 	assign MemWrite = (ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||
 							 ORI||ADDI||ADDIU||ANDI||SLTI||SLTIU||XORI||MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO||
-							 LW||LB||LBU||LH||LHU||LUI||JAL||JR||BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||J||JALR) ? 1'b0 :
+							 LW||LB||LBU||LH||LHU||LUI||JAL||JR||BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||J||JALR||
+							 ERET||MTC0||MFC0) ? 1'b0 :
 							(SW||SH||SB) ? 1'b1 :
 							1'b0;
 							
 	assign ALUSrc = (ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||JR||
 						  BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||JAL||J||JALR||
-						  MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO) ? 3'b000 : 
+						  MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO||ERET||MTC0||MFC0) ? 3'b000 : 
 						 (ORI||ADDI||ADDIU||ANDI||SLTI||SLTIU||XORI||LW||LB||LBU||LH||LHU||SW||SH||SB||LUI) ? 3'b001 :
 						 3'b000;
 						 
 	assign Extop = (ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||
-						 JR||ORI||ANDI||XORI||JAL||J||JALR||MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO) ? 2'b00 : 
+						 JR||ORI||ANDI||XORI||JAL||J||JALR||MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO||
+						 ERET||MTC0||MFC0) ? 2'b00 : 
 						(ADDI||ADDIU||SLTI||SLTIU||LW||LB||LBU||LH||LHU||SW||SH||SB||
 						 BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ) ? 2'b01 :
 						(LUI) ? 2'b10 :
 						2'b00;
 						
 	assign ALUop = (ADDU||ADD||ADDI||ADDIU||JR||LW||LB||LBU||LH||LHU||SW||SH||SB||BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||
-						 LUI||JAL||J||JALR||MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO) ? 4'b0000 :
+						 LUI||JAL||J||JALR||MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO||ERET||MTC0||MFC0) ? 4'b0000 :
 						(SUBU||SUB) ? 4'b0001 :
 						(ORI||OR) ? 4'b0010 :
 						(AND||ANDI) ? 4'b0011 :
@@ -175,14 +190,14 @@ module ctrl(
 	//Jump signal is for the unconditional jumping intructions					
 	assign Jump = (ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||
 						ORI||ADDI||ADDIU||ANDI||SLTI||SLTIU||XORI||LUI||MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO||
-						LW||LB||LBU||LH||LHU||SW||SH||SB||BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ) ? 1'b0 : 
+						LW||LB||LBU||LH||LHU||SW||SH||SB||BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||ERET||MTC0||MFC0) ? 1'b0 : 
 					  (JR||JAL||J||JALR) ? 1'b1 :
 					  1'b0;
 					  
 	assign extop_2 = (ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||JR||
 							ORI||ADDI||ADDIU||ANDI||SLTI||SLTIU||XORI||LW||SW||SH||SB||
 							MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO||
-							BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||LUI||JAL||J||JALR) ? 3'b000 :
+							BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||LUI||JAL||J||JALR||ERET||MTC0||MFC0) ? 3'b000 :
 						  (LB) ? 3'b001 :
 						  (LBU) ? 3'b010 :
 						  (LH) ? 3'b011 :
@@ -191,46 +206,65 @@ module ctrl(
 	
 	assign EXout_sel = (ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||JR||
 							  ORI||ADDI||ADDIU||ANDI||SLTI||SLTIU||XORI||LW||LB||LBU||LH||LHU||SW||SH||SB||
-							  BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||LUI||J||MULT||MULTU||DIV||DIVU||MTHI||MTLO) ? 3'b000 : 
+							  BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||LUI||J||MULT||MULTU||DIV||DIVU||MTHI||MTLO||
+							  ERET||MTC0||MFC0) ? 3'b000 : 
 							 (JAL||JALR) ? 3'b001 : 
 							 (MFHI) ? 3'b010 :
 							 (MFLO) ? 3'b011 :
 							 3'b000;
 							 
-	assign tnew = (JR||SW||SH||SB||BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||JAL||J||JALR) ? 3'd0 : 
+	assign tnew = (JR||SW||SH||SB||BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||JAL||J||JALR||ERET||MTC0) ? 3'd0 : 
 					  (ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||
 						ORI||ADDI||ADDIU||ANDI||SLTI||SLTIU||XORI||LUI||
 						MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO) ? 3'd1 :
-					  (LW||LB||LBU||LH||LHU) ? 3'd2 : 
+					  (LW||LB||LBU||LH||LHU||MFC0) ? 3'd2 : 
 					  3'd0;
 					  
-	assign tuse_rs = (JR||BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||JAL||J||JALR) ? 3'd0 :
+	assign tuse_rs = (JR||BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||JAL||J||JALR||ERET||MTC0||MFC0) ? 3'd0 :
 						  (ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||
 						   ORI||ADDI||ADDIU||ANDI||SLTI||SLTIU||XORI||LW||LB||LBU||LH||LHU||SW||SH||SB||LUI||
 							MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO) ? 3'd1 :
 						  3'd0;
 						  
 	assign tuse_rt = (JR||ORI||ADDI||ADDIU||ANDI||SLTI||SLTIU||XORI||LW||LB||LBU||LH||LHU||BEQ||
-							BNE||BLEZ||BGTZ||BLTZ||BGEZ||LUI||JAL||J||JALR) ? 3'd0 :
+							BNE||BLEZ||BGTZ||BLTZ||BGEZ||LUI||JAL||J||JALR||ERET||MFC0) ? 3'd0 :
 						  (ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||
 						   MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO) ? 3'd1 :
-						  (SW||SH||SB) ? 3'd2 : 
+						  (SW||SH||SB||MTC0) ? 3'd2 : 
 						  3'd0;
 						  
 	assign rsnum = (ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||JR||JALR||
 						 ORI||ADDI||ADDIU||ANDI||SLTI||SLTIU||XORI||LUI||MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO||
 						 LW||LB||LBU||LH||LHU||SW||SH||SB||BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ) ? rs :
-						(JAL||J) ? 5'b0 :
+						(JAL||J||ERET||MTC0||MFC0) ? 5'b0 :
 						5'b0;
 						
 	assign rtnum = (ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||
-						 SW||SH||SB||BEQ||BNE||BLEZ||BGTZ||MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO) ? rt : 
+						 SW||SH||SB||BEQ||BNE||BLEZ||BGTZ||MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO||MTC0) ? rt : 
 						(BLTZ||BGEZ||ORI||ADDI||ADDIU||ANDI||SLTI||SLTIU||XORI||LW||LB||LBU||LH||LHU||LUI||
-						 JAL||J||JR||JALR) ? 5'b0 : 
+						 JAL||J||JR||JALR||ERET||MFC0) ? 5'b0 : 
 						5'b0;
 						
 	assign M_in_D = (MFHI||MTHI||MFLO||MTLO||MULT||MULTU||DIV||DIVU) ? 1'b1 :
 						 1'b0;
 
+	assign start = (MULT||MULTU||DIV||DIVU||MTHI||MTLO) ? 1'b1 :
+						1'b0;
+
+	assign need_stall = (MULT||MULTU||DIV||DIVU) ? 1'b1 :
+							1'b0;
+							
+	assign unknown = ~(ADDU||SUBU||ADD||SUB||SLT||SLTU||AND||OR||XOR||NOR||SLL||SRL||SRA||SLLV||SRLV||SRAV||
+						  JR||SW||SH||SB||BEQ||BNE||BLEZ||BGTZ||BLTZ||BGEZ||J||JALR||JAL||
+						  MULT||MULTU||DIV||DIVU||MFHI||MFLO||MTHI||MTLO||
+						  ORI||ADDI||ADDIU||ANDI||SLTI||SLTIU||XORI||LUI||LW||LB||LBU||LH||LHU||
+						  ERET||MTC0||MFC0); 
+							
+	assign cp0write = (MTC0 === 1'b1) ? 1'b1 : 
+							1'b0;
+
+	assign eret = (ERET === 1'b1) ? 1'b1 : 1'b0;
+	
+	assign mtc0 = (MTC0 === 1'b1) ? 1'b1 : 1'b0;
 endmodule
 

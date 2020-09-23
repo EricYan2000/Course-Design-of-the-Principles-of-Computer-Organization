@@ -28,7 +28,8 @@ module WB(
     output RegWrite_W,
     output [31:0] PC4_W_out,
     output [31:0] WD_W,
-    output [4:0] A3_W
+    output [4:0] A3_W,
+	 output eret_w
     );
 
 	assign PC4_W_out = PC4_W_in;
@@ -36,6 +37,6 @@ module WB(
 	assign WD_W = ALUout_W_in;
 
 	wire [2:0] MemToReg;
-	ctrl controller_WB (.Instr(Instr_W_in), .RegWrite(RegWrite_W));
+	ctrl controller_WB (.Instr(Instr_W_in), .RegWrite(RegWrite_W), .eret(eret_w));
 	
 endmodule

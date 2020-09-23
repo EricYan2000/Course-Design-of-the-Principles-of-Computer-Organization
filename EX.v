@@ -28,19 +28,21 @@ module EX(
     input [31:0] PC8_E_in,
     input [4:0] A3_E_in,
     input [31:0] Ext_E_in,
-    input [31:0] ALUout_M,  //Êµ¼ÊÉÏÊÇdataout_M
+    input [31:0] ALUout_M,  //Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½dataout_M
     input [31:0] WD_W,
     input [2:0] ForwardRSE,
     input [2:0] ForwardRTE,
+	 input DISABLE,
 	 
-	 output start,
+	 output need_stall,
 	 output busy,
     output [31:0] Instr_E_out,
     output [31:0] ALUout_E,
     output [31:0] RT_E_out,
     output [4:0] A3_E_out,
     output [31:0] PC4_E_out,
-    output [31:0] PC8_E_out
+    output [31:0] PC8_E_out,
+	 output [4:0] judger_out
     );
 
 	assign Instr_E_out = Instr_E_in;
@@ -49,7 +51,7 @@ module EX(
 	assign PC8_E_out = PC8_E_in;
 
 	//Forward
-	wire [31:0] RS_E, ALU_B;	//RS²»ÓÃ¼ÌÐøÍùºóËÍÁË
+	wire [31:0] RS_E, ALU_B;	//RSï¿½ï¿½ï¿½Ã¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	MUX_4_32bits MFRSE (.MUXop(ForwardRSE), .in0(RS_E_in), .in1(ALUout_M), .in2(WD_W), .out(RS_E));
 	MUX_4_32bits MFRTE (.MUXop(ForwardRTE), .in0(RT_E_in), .in1(ALUout_M), .in2(WD_W), .out(RT_E_out));
 	
@@ -60,14 +62,19 @@ module EX(
 	//control
 	wire [2:0] EXout_sel;
 	wire [3:0] ALUop; 
-	ctrl controller_EX (.Instr(Instr_E_in), .ALUSrc(ALUSrc), .ALUop(ALUop), .EXout_sel(EXout_sel));
+	ctrl controller_EX (.Instr(Instr_E_in), .ALUSrc(ALUSrc), .ALUop(ALUop), .EXout_sel(EXout_sel), .start(start),
+								.need_stall(need_stall));
 	
 	//ALU
 	wire [31:0] ALUout, HI, LO;
-	ALU alu (.A(RS_E), .B(ALU_B), .instr(Instr_E_in), .ALUop(ALUop), .result(ALUout));
+	wire overflow;
+	ALU alu (.A(RS_E), .B(ALU_B), .instr(Instr_E_in), .ALUop(ALUop), .result(ALUout), .overflow(overflow));
 	XALU xalu (.clk(clk), .A(RS_E), .B(ALU_B), .instr(Instr_E_in), .reset(reset), .start(start), .busy(busy),
-					.HI(HI), .LO(LO));
+					.HI(HI), .LO(LO), .DISABLE(DISABLE));
 	
 	//EXout_sel
 	MUX_4_32bits mux_exout (.MUXop(EXout_sel), .in0(ALUout), .in1(PC8_E_in), .in2(HI), .in3(LO), .out(ALUout_E));
+	
+	//judge
+	overflow_judge Judge (.overflow(overflow), .ALUout(ALUout), .Instr(Instr_E_in), .ExcCode(judger_out));
 endmodule

@@ -42,7 +42,9 @@ module ID(
     output [31:0] RT_D_out,
     output [4:0] A3_D,
     output [31:0] Ext_D,
-	 output M_in_D
+	 output M_in_D,
+	 output unknown,
+	 output eret_d
     );
 
 	assign Instr_D_out = Instr_D_in;
@@ -61,10 +63,10 @@ module ID(
 	wire [1:0] Extop;
 	wire Branch, Jump, RegWrite;
 	ctrl controller_ID (.Instr(Instr_D_in), .NPCop(NPCop), .RegDst(RegDst), .Extop(Extop), .Jump(Jump),
-								.RegWrite(RegWrite), .M_in_D(M_in_D));
+								.RegWrite(RegWrite), .M_in_D(M_in_D), .unknown(unknown), .eret(eret_d));
 	
 	//GRF
-	wire [31:0] RD1, RD2, Instr_W;
+	wire [31:0] RD1, RD2;
 	RF GRF (.clk(clk), .reset(reset), .RegWrite(RegWrite_W), .PC4_W(PC4_W), .A1(rs), .A2(rt), .A3(A3_W), 
 				.WD(WD_W), .RD1(RD1), .RD2(RD2), .Instr_W(Instr_W));
 	
@@ -83,7 +85,7 @@ module ID(
 	//regdst
 	wire [4:0] A3_D_pre;
 	MUX_4_5bits regdst (.MUXop(RegDst), .in0(rd), .in1(rt), .in2(5'b11111), .out(A3_D_pre));
-	MUX_4_5bits A3_set_zero (.MUXop({2'b00,RegWrite}), .in0(5'b0), .in1(A3_D_pre), .out(A3_D));
+	MUX_4_5bits A3_set_zero (.MUXop({2'b00,RegWrite}), .in0(5'b0), .in1(A3_D_pre), .out(A3_D)); 
 	
 	//NPC
 	NextPC NPC (.PC4(PC4_D_in), .Instr(Instr_D_in), .NPCop(NPCop), .RS_D(RS_D_out), .NextPC(NPC_D));

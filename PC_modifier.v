@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date:    18:23:27 11/19/2019 
+// Create Date:    16:48:44 12/21/2019 
 // Design Name: 
-// Module Name:    IM 
+// Module Name:    PC_modifier 
 // Project Name: 
 // Target Devices: 
 // Tool versions: 
@@ -18,20 +18,17 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module IM(
-    input [31:0] PC,
-    output [31:0] RD
+module PC_modifier(
+    input [31:0] original,
+    input [31:0] exception_handler,
+    input [31:0] EPC,
+    input interrupt,
+    input exception,
+    input eret_d,
+    output [31:0] to_PC
     );
 
-	reg [31:0] ROM[4095:0];
-	wire [31:0] address;
-	assign address = PC - 32'h3000;
-	
-	initial
-	begin
-		$readmemh("code.txt",ROM);
-		$readmemh("code_handler.txt", ROM, 1120, 2047); 
-	end
-	
-	assign RD = ROM[address[13:2]];
+	assign to_PC = (eret_d) ? EPC :
+						(interrupt || exception) ? exception_handler :
+						original;
 endmodule

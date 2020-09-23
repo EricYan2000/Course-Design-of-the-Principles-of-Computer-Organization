@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date:    18:23:27 11/19/2019 
+// Create Date:    16:23:28 12/20/2019 
 // Design Name: 
-// Module Name:    IM 
+// Module Name:    BDreg 
 // Project Name: 
 // Target Devices: 
 // Tool versions: 
@@ -18,20 +18,28 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module IM(
-    input [31:0] PC,
-    output [31:0] RD
+module BDreg(
+    input clk,
+    input reset,
+    input stall,
+    input BD_in,
+    output reg BD_out
     );
 
-	reg [31:0] ROM[4095:0];
-	wire [31:0] address;
-	assign address = PC - 32'h3000;
-	
-	initial
+	initial 
 	begin
-		$readmemh("code.txt",ROM);
-		$readmemh("code_handler.txt", ROM, 1120, 2047); 
+		BD_out = 0;
+	end
+		
+	always @(posedge clk)
+	begin
+		if (reset)
+			BD_out = 0;
+		else
+		begin
+			if (~stall)
+				BD_out = BD_in;
+		end
 	end
 	
-	assign RD = ROM[address[13:2]];
 endmodule

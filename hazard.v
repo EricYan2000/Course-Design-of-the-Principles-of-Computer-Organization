@@ -42,29 +42,32 @@ module hazard(
 	wire [4:0] rsnum_D, rsnum_E, rsnum_M, rsnum_W;
 	wire [4:0] rtnum_D, rtnum_E, rtnum_M, rtnum_W;
 	wire [2:0] tuse_rs_D, tuse_rt_D;
+	wire eret_d, mtc0_e, mtc0_m;
 	
-	ctrl controller_D (.Instr(Instr_D_in), .tnew(tnew_D_pre), .rsnum(rsnum_D), .rtnum(rtnum_D), .tuse_rs(tuse_rs_D), .tuse_rt(tuse_rt_D));
-	ctrl controller_E (.Instr(Instr_E_in), .tnew(tnew_E_pre), .rsnum(rsnum_E), .rtnum(rtnum_E));
-	ctrl controller_M (.Instr(Instr_M_in), .tnew(tnew_M_pre), .rsnum(rsnum_M), .rtnum(rtnum_M));
+	ctrl controller_D (.Instr(Instr_D_in), .tnew(tnew_D_pre), .rsnum(rsnum_D), .rtnum(rtnum_D),
+							.tuse_rs(tuse_rs_D), .tuse_rt(tuse_rt_D), .eret(eret_d));
+	ctrl controller_E (.Instr(Instr_E_in), .tnew(tnew_E_pre), .rsnum(rsnum_E), .rtnum(rtnum_E), .mtc0(mtc0_e));
+	ctrl controller_M (.Instr(Instr_M_in), .tnew(tnew_M_pre), .rsnum(rsnum_M), .rtnum(rtnum_M), .mtc0(mtc0_m));
 	ctrl controller_W (.Instr(Instr_W_in), .tnew(tnew_W_pre), .rsnum(rsnum_W), .rtnum(rtnum_W));
 						
-	//统一指令tnew逐级递减
+	//The tnew decreases every level
 	//assign tnew_D = tnew_D_pre;
 	assign tnew_E = tnew_E_pre;
-	assign tnew_M = (tnew_M_pre <= 5'd1) ? 5'b0 : (tnew_M_pre - 5'd1);
-	assign tnew_W = (tnew_W_pre <= 5'd2) ? 5'b0 : (tnew_W_pre - 5'd2);
+	assign tnew_M = (tnew_M_pre <= 3'd1) ? 3'b0 : (tnew_M_pre - 3'd1);
+	assign tnew_W = (tnew_W_pre <= 3'd2) ? 3'b0 : (tnew_W_pre - 3'd2);
 	
 	//stalls
-	wire stall_D_E, stall_D_M;
+	wire stall_D_E, stall_D_M, stall_D_E_eret, stall_D_M_eret;
 	assign stall_D_E = ((A3_E != 5'b0) && (A3_E == rsnum_D) && (tnew_E > tuse_rs_D)) ||
 							 ((A3_E != 5'b0) && (A3_E == rtnum_D) && (tnew_E > tuse_rt_D));
 	assign stall_D_M = ((A3_M != 5'b0) && (A3_M == rsnum_D) && (tnew_M > tuse_rs_D)) ||
 							 ((A3_M != 5'b0) && (A3_M == rtnum_D) && (tnew_M > tuse_rt_D));
+	assign stall_D_E_eret = (eret_d && mtc0_e);
+	assign stall_D_M_eret = (eret_d && mtc0_m);
+	assign stall = (stall_D_E || stall_D_M || stall_D_E_eret || stall_D_M_eret) ? 1'b1 : 1'b0;
 	
-	assign stall = stall_D_E || stall_D_M;
 	
-	
-	//不需要考虑RegWrite，ID中RegWrite=0的A3设为0
+	//?????????RegWrite??ID??RegWrite=0??A3???0
 	assign ForwardRSD = ((A3_E!=5'b0)&&(A3_E==rsnum_D)&&(tnew_E==3'b0)) ? 3'b001 : 
 							  ((A3_M!=5'b0)&&(A3_M==rsnum_D)&&(tnew_M==3'b0)) ? 3'b010 :
 							  3'b000;

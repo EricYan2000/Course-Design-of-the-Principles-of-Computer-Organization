@@ -38,36 +38,47 @@ module DEreg(
 	 output reg[4:0] A3_out
     );
 	 
-	 initial begin
-	        Instr_out = 0;
-			  PC4_out = 0;
-			  PC8_out = 0;
-			  RS_out = 0;
-			  RT_out = 0;
-			  Ext_out = 0;
-			  A3_out = 0;
-	 end
-     always@(posedge clk)
-	  begin
-		  if(reset||stall)
-		  begin
-			  Instr_out = 0;
-			  PC4_out = 0;
-			  PC8_out = 0;
-			  RS_out = 0;
-			  RT_out = 0;
-			  Ext_out = 0;
-			  A3_out = 0;
-		  end
-		  else 
-		  begin
-			  Instr_out = Instr_in;
-			  PC4_out = PC4_in;
-			  PC8_out = PC8_in;
-			  RS_out = RS_in;
-			  RT_out = RT_in;
-			  Ext_out = Ext_in;
-			  A3_out = A3_in;
-	     end
-	  end
+	initial begin
+		Instr_out = 0;
+		PC4_out = 0;
+		PC8_out = 0;
+		RS_out = 0;
+		RT_out = 0;
+		Ext_out = 0;
+		A3_out = 0;
+	end
+	 
+	always@(posedge clk)
+	begin
+		if(reset)
+		begin
+			Instr_out <= 0;
+			PC4_out <= 0;
+			PC8_out <= 0;
+			RS_out <= 0;
+			RT_out <= 0;
+			Ext_out <= 0;
+			A3_out <= 0;
+		end
+		else if(stall)
+		begin
+			Instr_out <= 0;
+			PC4_out <= PC4_in;
+			PC8_out <= PC8_in;
+			RS_out <= 0;
+			RT_out <= 0;
+			Ext_out <= 0;
+			A3_out <= 0;
+		end
+		else 
+		begin
+			Instr_out <= Instr_in;
+			PC4_out <= PC4_in;
+			PC8_out <= PC8_in;
+			RS_out <= RS_in;
+			RT_out <= RT_in;
+			Ext_out <= Ext_in;
+			A3_out <= A3_in;
+		end
+	end
 endmodule

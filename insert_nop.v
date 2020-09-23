@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date:    18:23:27 11/19/2019 
+// Create Date:    16:52:02 12/21/2019 
 // Design Name: 
-// Module Name:    IM 
+// Module Name:    insert_nop 
 // Project Name: 
 // Target Devices: 
 // Tool versions: 
@@ -18,20 +18,13 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module IM(
-    input [31:0] PC,
-    output [31:0] RD
+module insert_nop(
+    input eret_d,
+    input [31:0] instr_in,
+    output [31:0] instr_out
     );
 
-	reg [31:0] ROM[4095:0];
-	wire [31:0] address;
-	assign address = PC - 32'h3000;
-	
-	initial
-	begin
-		$readmemh("code.txt",ROM);
-		$readmemh("code_handler.txt", ROM, 1120, 2047); 
-	end
-	
-	assign RD = ROM[address[13:2]];
+	assign instr_out = (eret_d) ? 32'h0 :
+					instr_in;
+
 endmodule

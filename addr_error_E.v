@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date:    18:23:27 11/19/2019 
+// Create Date:    15:33:33 12/17/2019 
 // Design Name: 
-// Module Name:    IM 
+// Module Name:    addr_error_E 
 // Project Name: 
 // Target Devices: 
 // Tool versions: 
@@ -18,20 +18,12 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module IM(
-    input [31:0] PC,
-    output [31:0] RD
+module addr_error_E(
+	 input [31:0] PC,
+	 output [4:0] ExcCode
     );
 
-	reg [31:0] ROM[4095:0];
-	wire [31:0] address;
-	assign address = PC - 32'h3000;
-	
-	initial
-	begin
-		$readmemh("code.txt",ROM);
-		$readmemh("code_handler.txt", ROM, 1120, 2047); 
-	end
-	
-	assign RD = ROM[address[13:2]];
+	assign ExcCode = ((PC[1:0] == 2'b00) && (PC >= 32'h3000) && (PC <= 32'h4fff)) ? 5'd0 :		//no_error
+						5'd4;																							//error
+
 endmodule

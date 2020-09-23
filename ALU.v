@@ -23,17 +23,37 @@ module ALU(
     input [31:0] B,
 	 input [31:0] instr,
     input [3:0] ALUop,
+	output reg overflow,
     output reg [31:0] result,
     output Zero
     );
 
+	reg [32:0] temp;
 	assign Zero = (A == B);
 	`define shamt (instr[10:6])
 	
 	always @(*)
 	begin
-		if (ALUop == 4'b0000)			result = A + B;
-		else if (ALUop == 4'b0001)		result = A - B;
+		if (ALUop == 4'b0000)			
+		begin
+			result = A + B;
+			temp = 0;
+			temp = {A[31], A} + {B[31], B};
+			if (temp[32] != temp[31])
+				overflow = 1'b1;
+			else	
+				overflow = 1'b0;
+		end
+		else if (ALUop == 4'b0001)		
+		begin
+			result = A - B;
+			temp = 0;
+			temp = {A[31], A} - {B[31], B};
+			if (temp[32] != temp[31])
+				overflow = 1'b1;
+			else	
+				overflow = 1'b0;
+		end
 		else if (ALUop == 4'b0010)		result = A | B;
 		else if (ALUop == 4'b0011)		result = A & B;
 		else if (ALUop == 4'b0100)		result = A ^ B;

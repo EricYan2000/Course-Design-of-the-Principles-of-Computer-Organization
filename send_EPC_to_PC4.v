@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date:    18:23:27 11/19/2019 
+// Create Date:    17:55:59 12/21/2019 
 // Design Name: 
-// Module Name:    IM 
+// Module Name:    send_EPC_to_PC4 
 // Project Name: 
 // Target Devices: 
 // Tool versions: 
@@ -18,20 +18,14 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module IM(
+module send_EPC_to_PC4(
+    input eret_d,
     input [31:0] PC,
-    output [31:0] RD
+    input [31:0] EPC,
+    output [31:0] PC4_out
     );
 
-	reg [31:0] ROM[4095:0];
-	wire [31:0] address;
-	assign address = PC - 32'h3000;
-	
-	initial
-	begin
-		$readmemh("code.txt",ROM);
-		$readmemh("code_handler.txt", ROM, 1120, 2047); 
-	end
-	
-	assign RD = ROM[address[13:2]];
+	assign PC4_out = (eret_d) ? (EPC + 32'd4) :
+							(PC + 32'd4);
+
 endmodule

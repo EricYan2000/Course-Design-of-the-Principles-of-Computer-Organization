@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date:    18:23:27 11/19/2019 
+// Create Date:    16:40:13 12/17/2019 
 // Design Name: 
-// Module Name:    IM 
+// Module Name:    choose_EPC_E 
 // Project Name: 
 // Target Devices: 
 // Tool versions: 
@@ -18,20 +18,15 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module IM(
-    input [31:0] PC,
-    output [31:0] RD
+module choose_EPC_E(
+    input PCSrc,
+    input [31:0] EPC_D,
+    input [31:0] NPC,
+    output [31:0] EPC_out
     );
 
-	reg [31:0] ROM[4095:0];
-	wire [31:0] address;
-	assign address = PC - 32'h3000;
-	
-	initial
-	begin
-		$readmemh("code.txt",ROM);
-		$readmemh("code_handler.txt", ROM, 1120, 2047); 
-	end
-	
-	assign RD = ROM[address[13:2]];
+	wire [31:0] NPC_done;
+	assign NPC_done = {NPC[31:2] ,2'b00};
+	assign EPC = (PCSrc == 1) ? NPC_done :
+					  EPC_D;
 endmodule

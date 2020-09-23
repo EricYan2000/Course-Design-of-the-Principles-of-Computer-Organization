@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date:    18:23:27 11/19/2019 
+// Create Date:    23:56:26 12/17/2019 
 // Design Name: 
-// Module Name:    IM 
+// Module Name:    choose_Exc_M 
 // Project Name: 
 // Target Devices: 
 // Tool versions: 
@@ -18,20 +18,15 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module IM(
-    input [31:0] PC,
-    output [31:0] RD
+module choose_Exc_M(
+    input [4:0] judger_out,
+    input [4:0] Exc_E,
+    output [4:0] Exc_out,
+	 output error
     );
 
-	reg [31:0] ROM[4095:0];
-	wire [31:0] address;
-	assign address = PC - 32'h3000;
+	assign Exc_out = (Exc_E == 5'b0) ? judger_out :
+							Exc_E;
+	assign error = ((judger_out != 0) || (Exc_E != 0));
 	
-	initial
-	begin
-		$readmemh("code.txt",ROM);
-		$readmemh("code_handler.txt", ROM, 1120, 2047); 
-	end
-	
-	assign RD = ROM[address[13:2]];
 endmodule
